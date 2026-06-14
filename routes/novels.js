@@ -11,24 +11,24 @@ const router = express.Router();
 
 const getCachedOrFetch = async (key, fetchFn, ttl = 3600) => {
   const cached = cache.get(key);
-
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
 
   const data = await fetchFn();
-
   cache.set(key, data, ttl);
 
   return data;
 };
 
-const handleError = (res, error) => {
-  console.error('Novel Route Error:', error.message);
+/* -------------------------------------------------------------------------- */
+/* ERROR HANDLER */
+/* -------------------------------------------------------------------------- */
+
+const handleError = (res, error, context = 'Novel API Error') => {
+  console.error(`🔥 ${context}:`, error.message);
 
   return res.status(500).json({
     success: false,
-    message: error.message
+    message: error.message || 'Internal server error'
   });
 };
 
@@ -53,18 +53,14 @@ router.get('/search', optionalAuth, async (req, res) => {
       () => novelApi.search({ q, page })
     );
 
-    return res.json({
-      success: true,
-      data
-    });
+    return res.json({ success: true, data });
   } catch (error) {
-    return handleError(res, error);
+    return handleError(res, error, 'Search failed');
   }
 });
 
 /* -------------------------------------------------------------------------- */
 /* FEATURED NOVELS */
-/* GET /api/novels/featured */
 /* -------------------------------------------------------------------------- */
 
 router.get('/featured', optionalAuth, async (req, res) => {
@@ -77,36 +73,9 @@ router.get('/featured', optionalAuth, async (req, res) => {
       1800
     );
 
-    return res.json({
-      success: true,
-      data
-    });
+    return res.json({ success: true, data });
   } catch (error) {
-    return handleError(res, error);
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/* SINGLE CHAPTER */
-/* GET /api/novels/chapter/:id */
-/* -------------------------------------------------------------------------- */
-
-router.get('/chapter/:id', optionalAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const data = await getCachedOrFetch(
-      `chapter:${id}`,
-      () => novelApi.getChapter(id),
-      86400
-    );
-
-    return res.json({
-      success: true,
-      data
-    });
-  } catch (error) {
-    return handleError(res, error);
+    return handleError(res, error, 'Featured failed');
   }
 });
 
@@ -118,11 +87,7 @@ router.get('/chapter/:id', optionalAuth, async (req, res) => {
 router.get('/:id/chapters', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      page = 1,
-      limit = 50,
-      order = 'ASC'
-    } = req.query;
+    const { page = 1, limit = 50, order = 'ASC' } = req.query;
 
     const data = await getCachedOrFetch(
       `chapters:${id}:${page}:${limit}:${order}`,
@@ -136,18 +101,46 @@ router.get('/:id/chapters', optionalAuth, async (req, res) => {
       86400
     );
 
-    return res.json({
-      success: true,
-      data
-    });
+    return res.json({ success: true, data });
   } catch (error) {
-    return handleError(res, error);
+    return handleError(res, error, 'Chapter list failed');
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/* SINGLE CHAPTER (IMPORTANT FIXED FLOW) */
+/*
+IMPORTANT:
+Your API actually returns chapterId-based content from:
+novelApi.getChapter(id)
+*/
+/* -------------------------------------------------------------------------- */
+
+router.get('/chapter/:id', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'chapter id is required'
+      });
+    }
+
+    const data = await getCachedOrFetch(
+      `chapter:${id}`,
+      () => novelApi.getChapter(id),
+      86400
+    );
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    return handleError(res, error, 'Chapter fetch failed');
   }
 });
 
 /* -------------------------------------------------------------------------- */
 /* RECOMMENDATIONS */
-/* GET /api/novels/:id/recommendations */
 /* -------------------------------------------------------------------------- */
 
 router.get('/:id/recommendations', optionalAuth, async (req, res) => {
@@ -156,7 +149,7 @@ router.get('/:id/recommendations', optionalAuth, async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const data = await getCachedOrFetch(
-      `recommendations:${id}:${page}:${limit}`,
+      `recommend:${id}:${page}:${limit}`,
       () =>
         novelApi.getRecommendations({
           novelId: id,
@@ -166,18 +159,14 @@ router.get('/:id/recommendations', optionalAuth, async (req, res) => {
       3600
     );
 
-    return res.json({
-      success: true,
-      data
-    });
+    return res.json({ success: true, data });
   } catch (error) {
-    return handleError(res, error);
+    return handleError(res, error, 'Recommendations failed');
   }
 });
 
 /* -------------------------------------------------------------------------- */
 /* RANKINGS */
-/* GET /api/novels/rankings/:rank */
 /* -------------------------------------------------------------------------- */
 
 router.get('/rankings/:rank', optionalAuth, async (req, res) => {
@@ -196,19 +185,14 @@ router.get('/rankings/:rank', optionalAuth, async (req, res) => {
       3600
     );
 
-    return res.json({
-      success: true,
-      data
-    });
+    return res.json({ success: true, data });
   } catch (error) {
-    return handleError(res, error);
+    return handleError(res, error, 'Rankings failed');
   }
 });
 
 /* -------------------------------------------------------------------------- */
-/* NOVEL DETAILS */
-/* IMPORTANT: MUST BE LAST */
-/* GET /api/novels/:detailPath */
+/* NOVEL DETAILS (KEEP LAST - IMPORTANT) */
 /* -------------------------------------------------------------------------- */
 
 router.get('/:detailPath', optionalAuth, async (req, res) => {
@@ -221,12 +205,9 @@ router.get('/:detailPath', optionalAuth, async (req, res) => {
       86400
     );
 
-    return res.json({
-      success: true,
-      data
-    });
+    return res.json({ success: true, data });
   } catch (error) {
-    return handleError(res, error);
+    return handleError(res, error, 'Novel details failed');
   }
 });
 

@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -13,6 +14,7 @@ import { testSupabaseConnection } from './config/supabase.js';
 
 ROUTES
 */
+import userNovelsRoutes from './routes/userNovels.js';
 import authRoutes from './routes/auth.js';
 import novelRoutes from './routes/novels.js';
 import bookmarkRoutes from './routes/bookmarks.js';
@@ -144,7 +146,7 @@ app.use('/api/novels', novelRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/favorites', favoriteRoutes);
-
+app.use('/api/user-novels', userNovelsRoutes);
 /*
 |--------------------------------------------------------------------------
 

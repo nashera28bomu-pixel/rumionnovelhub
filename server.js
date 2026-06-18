@@ -20,6 +20,7 @@ import novelRoutes from './routes/novels.js';
 import bookmarkRoutes from './routes/bookmarks.js';
 import historyRoutes from './routes/history.js';
 import favoriteRoutes from './routes/favorites.js';
+import interactionsRoutes from './routes/interactions.js';
 
 dotenv.config();
 
@@ -147,6 +148,7 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/user-novels', userNovelsRoutes);
+app.use('/api/interactions', interactionsRoutes);
 /*
 |--------------------------------------------------------------------------
 
